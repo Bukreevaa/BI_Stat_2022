@@ -6,6 +6,7 @@ output:
 date: "2022-11-21"
 ---
 ```{r library}
+library(ggplot2)
 library(tidyr)
 library(GGally)
 
@@ -36,7 +37,7 @@ EDA
 summary(work_table)
 
 ```
-*Emission control*
+*Table check *
 Working with NA in numeric columns
 ```{r NA mean}
 work_table$Length <- as.numeric(work_table$Length) 

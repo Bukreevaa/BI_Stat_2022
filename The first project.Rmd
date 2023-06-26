@@ -1,0 +1,331 @@
+---
+title: "The first project task"
+output:
+  html_document:
+    df_print: paged
+date: "2022-11-21"
+---
+```{r library}
+library(ggplot2)
+library(tidyr)
+library(GGally)
+
+```
+
+
+
+
+## 1 User function
+```{r function}
+tablel_merge <- function(path_to_data) {
+  names <- list.files(path=path_to_data, full.names=TRUE)
+  tables <- lapply(names, function (x) read.csv(file=x, sep=','))
+  Reduce(function(x,y) merge(x,y, all = TRUE), tables)}
+```
+
+## 2 A brief EDA
+
+Downloading data:
+
+```{r final_table}
+work_table <- tablel_merge('/Users/asabukreeva/Downloads/Data')
+```
+
+EDA
+
+```{r summary}
+summary(work_table)
+
+```
+*Table check *
+Working with NA in numeric columns
+```{r NA mean}
+work_table$Length <- as.numeric(work_table$Length) 
+work_table$Length[is.na(work_table$Length)]<-mean(work_table$Length, na.rm = T)
+work_table$Diameter[is.na(work_table$Diameter)]<-mean(work_table$Diameter, na.rm = T)
+work_table$Height[is.na(work_table$Height)]<-mean(work_table$Height, na.rm = T)
+work_table$Whole_weight[is.na(work_table$Whole_weight)]<-mean(work_table$Whole_weight, na.rm = T)
+work_table$Shucked_weight[is.na(work_table$Shucked_weight)]<-mean(work_table$Shucked_weight, na.rm = T)
+work_table$Shell_weight[is.na(work_table$Shell_weight)]<-mean(work_table$Shell_weight, na.rm = T)
+work_table <- work_table %>% drop_na()
+
+summary(work_table) 
+```
+Now I have the missing values in all numeric columns replaced by the column average.
+Next step is correcting the incorrect values in the columns.
+```{r correct}
+work_table$Rings[(work_table$Rings) == 'nine']<- 9
+work_table$Sex..1...male..2...female..3...uvenil.[(work_table$Sex..1...male..2...female..3...uvenil.) == 'male']<- 1
+work_table$Sex..1...male..2...female..3...uvenil.[(work_table$Sex..1...male..2...female..3...uvenil.) == 'one']<- 1
+work_table$Sex..1...male..2...female..3...uvenil.[(work_table$Sex..1...male..2...female..3...uvenil.) == 'three']<- 3
+```
+```{r remove NA}
+work_table <- work_table %>% drop_na()
+```
+I decided to change names and values of sex column (original name is long and really annoying)
+```{r sex}
+work_table$Sex..1...male..2...female..3...uvenil.[(work_table$Sex..1...male..2...female..3...uvenil.) == 1]<- 'male'
+work_table$Sex..1...male..2...female..3...uvenil.[(work_table$Sex..1...male..2...female..3...uvenil.) == 2]<- 'female'
+work_table$Sex..1...male..2...female..3...uvenil.[(work_table$Sex..1...male..2...female..3...uvenil.) == 3]<- 'uvenil'
+names(work_table)[names(work_table) == 'Sex..1...male..2...female..3...uvenil.'] <- 'Sex'
+names(work_table)
+```
+I'm not sure that it is correct, but I decided to change Rings collumn as numeric. 
+```{r Diameter_num}
+work_table$Rings <- as.numeric(work_table$Rings)
+```
+Fine, it looks like the table is now clean and I can build boxplots to check for outliers.
+
+
+*Checking Emissions*
+```{r Length}
+boxplot(work_table$Length,
+        ylab = "Length")
+```
+```{r Diameter}
+boxplot(work_table$Diameter,
+        ylab = "Diameter")
+```
+```{r Height}
+boxplot(work_table$Height,
+        ylab = "Height")
+```
+```{r Whole_weight}
+boxplot(work_table$Whole_weight,
+        ylab = "Whole_weight")
+```
+```{r Shucked_weight}
+boxplot(work_table$Shucked_weight,
+        ylab = "Shucked_weight")
+```
+```{r Viscera_weight}
+boxplot(work_table$Viscera_weight,
+        ylab = "Viscera_weight")
+```
+```{r Shell_weight}
+boxplot(work_table$Shell_weight,
+        ylab = "Shell_weight")
+```
+```{r Rings}
+boxplot(work_table$Rings,
+        ylab = "Rings")
+```
+
+
+
+
+
+Oh, the outliers are everywhere. I try to get rid of them using quantile restrictions. 
+
+```{r Length_outlier}
+quartiles <- quantile(work_table$Length, probs=c(.25, .75), na.rm = FALSE)
+IQR <- IQR(work_table$Length)
+
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+
+table_no_outlier <- subset(work_table, work_table$Length > Lower & work_table$Length < Upper)
+boxplot(table_no_outlier$Length,
+        ylab = "Length")
+```
+```{r Diameter_outlier}
+quartiles <- quantile(table_no_outlier$Diameter, probs=c(.25, .75), na.rm = FALSE) 
+IQR <- IQR(table_no_outlier$Diameter)
+
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+
+table_no_outlier <- subset(table_no_outlier, table_no_outlier$Diameter> Lower & table_no_outlier$Diameter < Upper)
+boxplot(table_no_outlier$Diameter,
+        ylab = "Diameter")
+```
+```{r Height_outlier}
+quartiles <- quantile(table_no_outlier$Height, probs=c(.25, .75), na.rm = FALSE) 
+IQR <- IQR(table_no_outlier$Height)
+
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+
+table_no_outlier <- subset(table_no_outlier, table_no_outlier$Height> Lower & table_no_outlier$Height < Upper)
+boxplot(table_no_outlier$Height,
+ylab = "Height")
+```
+```{r Whole_weight_outlier}
+quartiles <- quantile(table_no_outlier$Whole_weight, probs=c(.25, .75), na.rm = FALSE) 
+IQR <- IQR(table_no_outlier$Whole_weight)
+
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+
+table_no_outlier <- subset(table_no_outlier, table_no_outlier$Whole_weight> Lower & table_no_outlier$Whole_weight < Upper)
+boxplot(table_no_outlier$Whole_weight,
+        ylab = "Whole weight") 
+```
+```{r Shucked_weight_outlier}
+quartiles <- quantile(table_no_outlier$Shucked_weight, probs=c(.25, .75), na.rm = FALSE) 
+IQR <- IQR(table_no_outlier$Shucked_weight)
+
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+
+table_no_outlier <- subset(table_no_outlier, table_no_outlier$Shucked_weight> Lower & table_no_outlier$Shucked_weight < Upper)
+boxplot(table_no_outlier$Shucked_weight,
+        ylab = "Shucked weight")
+```
+```{r Viscera_weight_outlier}
+quartiles <- quantile(table_no_outlier$Viscera_weight, probs=c(.25, .75), na.rm = FALSE) 
+IQR <- IQR(table_no_outlier$Viscera_weight)
+
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+
+table_no_outlier <- subset(table_no_outlier, table_no_outlier$Viscera_weight> Lower & table_no_outlier$Viscera_weight < Upper)
+boxplot(table_no_outlier$Viscera_weight,
+         ylab = "Viscera weight") 
+```
+```{r Shell_weight_outlier}
+quartiles <- quantile(table_no_outlier$Shell_weight, probs=c(.25, .75), na.rm = FALSE) 
+IQR <- IQR(table_no_outlier$Shell_weight)
+
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+
+table_no_outlier <- subset(table_no_outlier, table_no_outlier$Shell_weight> Lower & table_no_outlier$Shell_weight < Upper)
+boxplot(table_no_outlier$Shell_weight,
+        ylab = "Shell weight")
+```
+```{r Rings_outlier}
+quartiles <- quantile(table_no_outlier$Rings, probs=c(.25, .75), na.rm = FALSE) 
+IQR <- IQR(table_no_outlier$Rings)
+
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+
+table_no_outlier <- subset(table_no_outlier, table_no_outlier$Rings> Lower & table_no_outlier$Rings < Upper)
+boxplot(table_no_outlier$Rings,
+        ylab = "Rings")
+```
+Seems like got rid of emissions, but it's not certain. 
+Now let's look at the correlations. 
+*Correlations*
+```{r correlation}
+ggcorr(table_no_outlier)
+```
+Cool, a strongly positive correlation is observed almost everywhere.
+
+## 3 The standard deviation of the Length variable for molluscs of different sexes.
+```{r Lenght_sd}
+tapply(X = table_no_outlier$Length, INDEX = table_no_outlier$Sex, FUN = mean)
+
+tapply(X = table_no_outlier$Length, INDEX = table_no_outlier$Sex, FUN = sd)
+```
+
+## 4 The percentage of molluscs that have a value of the Height variable less than 0,165.
+```{r pr}
+x <- table_no_outlier[table_no_outlier$Height >= 0.165, ]
+short <- dim(x)
+all <- dim(table_no_outlier)
+pr <- 100*short[1]/all[1]
+pr
+```
+
+
+
+## 5 Values of the variable Length that are higher than 92% of all observations.
+
+```{r len more 92}
+Length <- c(table_no_outlier$Length)
+q <- quantile(table_no_outlier$Length, probs= c(0.92, 0.92), na.rm = FALSE)
+q
+```
+## 6 Z-transformation of Length
+
+```{r z-score}
+m <- mean(Length)
+s <- sd(Length)
+Lenght_z_scores <- (Length-m)/s
+
+```
+
+Perhaps there is a standard feature for it, but I could not find it.
+
+## 7 Comparison between the diameter of clams with the number of rings 5 and 15.
+
+```{r compare}
+five_rings <- subset(table_no_outlier, table_no_outlier$Rings == 5)
+summary(five_rings$Diameter)
+fiveteen_rings <- subset(table_no_outlier, table_no_outlier$Rings == 15)
+summary(fiveteen_rings$Diameter)
+f_rings <- subset(table_no_outlier, table_no_outlier$Rings == 5 | table_no_outlier$Rings == 15)
+f_rings$Rings <- as.character(f_rings$Rings)
+
+```
+```{r compare_plot}
+ggplot(f_rings, aes(x = Rings, y = Diameter, color = Rings)) +
+  geom_boxplot() +
+  theme_classic()
+```
+```{r compare_plot2}
+ggplot(f_rings, aes(x = Rings, y = Diameter, color = Rings)) + 
+  geom_dotplot(binaxis='y', stackdir='center')
+```
+You can choose which one to use in your publication. 
+Conclusions: Diameter of mollusks has a positive correlation with the number of rings. The median for molluscs with 5 rings is 0.2100, and with 15 rings 0.4600. The difference is more than twofold. 
+
+## 8  Diameter and Whole_weight
+```{r DW_plot}
+cor.test(table_no_outlier$Diameter, table_no_outlier$Whole_weight)
+```
+
+There is a strong positive correlation.
+
+```{r cor_plot}
+plot(table_no_outlier$Diameter, table_no_outlier$Whole_weight)
+Diameter <- table_no_outlier$Diameter
+Whole_weight <- table_no_outlier$Whole_weight
+plot(Diameter, Whole_weight, pch = 19, col = "lightblue")
+```
+## 9  My suggestions 
+Correlation with sex
+I was curious to see if there was a correlation with gender, so I decided to check it out. 
+
+
+```{r sex_Length_plot}
+ggplot(table_no_outlier, aes(x = Length, y = Sex, color = Sex)) +
+  geom_boxplot() +
+  theme_classic()
+```
+
+```{r sex_Diameter_plot}
+ggplot(table_no_outlier, aes(x = Diameter, y = Sex, color = Sex)) +
+  geom_boxplot() +
+  theme_classic()
+```
+
+```{r sex_Whole_weight}
+ggplot(table_no_outlier, aes(x = Whole_weight, y = Sex, color = Sex)) +
+  geom_boxplot() +
+  theme_classic()
+```
+```{r sex_Shucked_weight}
+ggplot(table_no_outlier, aes(x = Shucked_weight, y = Sex, color = Sex)) +
+  geom_boxplot() +
+  theme_classic()
+```
+```{r sex_Viscera_weight}
+ggplot(table_no_outlier, aes(x = Viscera_weight, y = Sex, color = Sex)) +
+  geom_boxplot() +
+  theme_classic()
+```
+
+
+```{r sex_Shell_weight}
+ggplot(table_no_outlier, aes(x = Shell_weight, y = Sex, color = Sex)) +
+  geom_boxplot() +
+  theme_classic()
+```
+
+
+
+Conclusions: There is no correlation between females and males, but there is a correlation between sexually mature and nonsexually mature individuals.
+
